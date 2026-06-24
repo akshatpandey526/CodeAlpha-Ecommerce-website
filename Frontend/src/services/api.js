@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-    baseURL: 'http://localhost:5000/api'
+    baseURL: 'https://codealpha-ecommerce-website.onrender.com/api'
 });
 
 // Request interceptor to attach JWT token

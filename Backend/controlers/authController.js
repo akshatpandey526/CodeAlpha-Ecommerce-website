@@ -5,12 +5,18 @@ const sendEmail = require('../utils/sendEmail');
 
 // token generate karna 
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret_key_for_code_alpha_ecommerce', { expiresIn: '30d' });
 }
 // reister a user 
 const registerUser = async (req, res) => {
-    const { name, email, password } = req.body;
+    let { name, email, password } = req.body;
     try {
+        if (!name || !email || !password) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
+
+        email = email.toLowerCase().trim();
+
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: "User Already Exists" });
@@ -45,6 +51,10 @@ const registerUser = async (req, res) => {
         }
     }
     catch (error) {
+        console.error("Registration error:", error);
+        if (error.code === 11000) {
+            return res.status(400).json({ message: "User Already Exists" });
+        }
         res.status(500).json({ message: 'server error' });
     }
 
@@ -52,8 +62,14 @@ const registerUser = async (req, res) => {
 // login user 
 
 const loginUser = async (req, res) => {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
     try {
+        if (!email || !password) {
+            return res.status(400).json({ message: "Email and password are required" });
+        }
+
+        email = email.toLowerCase().trim();
+
         const user = await User.findOne({ email });
         if (user && (await bcrypt.compare(password, user.password))) {
             res.json({
@@ -69,6 +85,7 @@ const loginUser = async (req, res) => {
         }
     }
     catch (error) {
+        console.error("Login error:", error);
         res.status(500).json({ message: 'server error' });
     }
 }

@@ -10,19 +10,29 @@ const seedData = async () => {
         await connectDB();
 
         // Find or create a default admin user to assign products to
-        let adminUser = await User.findOne({ role: 'admin' });
+        const adminEmail = (process.env.EMAIL_USER || 'admin@codealpha.com').toLowerCase().trim();
+        const adminPassword = process.env.EMAIL_PASS || 'admin123';
+
+        let adminUser = await User.findOne({ email: adminEmail });
         if (!adminUser) {
             // Create a default admin user if none exists
             const bcrypt = require('bcryptjs');
             const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash('admin123', salt);
+            const hashedPassword = await bcrypt.hash(adminPassword, salt);
             adminUser = await User.create({
                 name: 'Admin User',
-                email: 'admin@codealpha.com',
+                email: adminEmail,
                 password: hashedPassword,
                 role: 'admin'
             });
-            console.log('Created default admin user: admin@codealpha.com / admin123');
+            console.log(`Created default admin user: ${adminEmail} / ${adminPassword}`);
+        } else {
+            // Make sure the existing user with this email has 'admin' role
+            if (adminUser.role !== 'admin') {
+                adminUser.role = 'admin';
+                await adminUser.save();
+                console.log(`Updated user ${adminEmail} to have admin role.`);
+            }
         }
 
         // Clear existing products
